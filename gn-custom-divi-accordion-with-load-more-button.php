@@ -62,23 +62,34 @@ function GNCUSTOMDI()
 	return Gn_Custom_Divi_Accordion_With_Load_More_Button::instance();
 }
 
-GNCUSTOMDI();
-
 // Register the shortcode
 add_shortcode('divi_accordion_cpt_load_more', 'generate_custom_accordion');
-
 function generate_custom_accordion($atts)
 {
+	$index = 0; // Initialize the index variable
 	// Shortcode attributes
 	$atts = shortcode_atts(
 		array(
 			'post_type' => 'post',
 			'taxonomy' => 'category',
 			'term' => 'news',
-			'count' => 8,
+			'count' => -1,
 		),
 		$atts
 	);
+
+	// Enqueue Divi stylesheets explicitly
+	add_action('wp_enqueue_scripts', 'enqueue_divi_styles');
+
+	// Enqueue Divi stylesheets explicitly
+	add_action('wp_enqueue_scripts', 'enqueue_divi_styles');
+
+	function enqueue_divi_styles()
+	{
+		wp_enqueue_style('divi-parent-theme-style', get_template_directory_uri() . '/style.css');
+		wp_enqueue_style('divi-child-theme-style', get_stylesheet_uri());
+
+	}
 
 	// Query arguments
 	$args = array(
@@ -96,10 +107,9 @@ function generate_custom_accordion($atts)
 	// Perform the query
 	$query = new WP_Query($args);
 
-	// Start building the accordion
-	$output = '<div id="custom-accordion" class="et_pb_accordion">';
-
 	// Loop through the queried posts
+	$output = '<div class="et_pb_module et_pb_accordion et_pb_accordion_0">';
+
 	while ($query->have_posts()) {
 		$query->the_post();
 
@@ -108,13 +118,15 @@ function generate_custom_accordion($atts)
 		$post_title = get_the_title();
 		$post_content = get_the_content();
 
-		// Build the accordion item
-		$output .= '<h3 class="et_pb_toggle">' . $post_date . '</h3>';
-		$output .= '<div class="et_pb_toggle_content">';
-		$output .= '<div class="et_pb_column et_pb_column_1_4">' . $post_date . '</div>';
-		$output .= '<div class="et_pb_column et_pb_column_2_4">' . $post_title . '</div>';
-		$output .= '<div class="et_pb_column et_pb_column_1_4"><a href="#" class="et_pb_toggle_title">Toggle</a></div>';
+		$accordion_class = ($index === 0) ? 'et_pb_toggle_open' : 'et_pb_toggle_close';
+		$output .= '<div id="custom-accordion-' . $index . '" class="et_pb_toggle et_pb_module et_pb_accordion_item et_pb_accordion_item_' . $index . ' ' . $accordion_class . '">';
+		$output .= '<div class="et_pb_toggle_header">';
+		$output .= '<div class="et_pb_toggle_title">' . $post_date . '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' . $post_title . '</div>';
 		$output .= '</div>';
+		$output .= '<div class="et_pb_toggle_content clearfix">' . $post_content . '</div>';
+		$output .= '</div>';
+
+		$index++; // Increment the index variable
 	}
 
 	// Close the accordion and reset post data
@@ -127,17 +139,18 @@ function generate_custom_accordion($atts)
 	}
 
 	// Enqueue the necessary scripts
-	wp_enqueue_script('custom-accordion-script', plugin_dir_url(__FILE__) . 'custom-accordion-script.js', array('jquery'), '1.0', true);
+	wp_enqueue_script('custom-accordion-script', GNCUSTOMDI_PLUGIN_URL . 'core/includes/assets/js/custom-accordion-script.js', array('jquery'), '1.0', true);
+
 	wp_localize_script(
 		'custom-accordion-script',
 		'customAccordion',
 		array(
 			'ajaxurl' => admin_url('admin-ajax.php'),
 			'nonce' => wp_create_nonce('custom-accordion-nonce'),
-			'post_type' => $atts['post_type'],
-			'taxonomy' => $atts['taxonomy'],
-			'term' => $atts['term'],
-			'count' => $atts['count'],
+			'post_type' => esc_attr($atts['post_type']),
+			'taxonomy' => esc_attr($atts['taxonomy']),
+			'term' => esc_attr($atts['term']),
+			'count' => esc_attr($atts['count']),
 		)
 	);
 
@@ -181,12 +194,15 @@ function custom_accordion_load_more()
 		$post_date = get_the_date('j F Y, l');
 		$post_title = get_the_title();
 
-		$output .= '<h3 class="et_pb_toggle">' . $post_date . '</h3>';
-		$output .= '<div class="et_pb_toggle_content">';
-		$output .= '<div class="et_pb_column et_pb_column_1_4">' . $post_date . '</div>';
-		$output .= '<div class="et_pb_column et_pb_column_2_4">' . $post_title . '</div>';
-		$output .= '<div class="et_pb_column et_pb_column_1_4"><a href="#" class="et_pb_toggle_title">Toggle</a></div>';
+		$accordion_class = ($index === 0) ? 'et_pb_toggle_open' : 'et_pb_toggle_close';
+		$output .= '<div id="custom-accordion-' . $index . '" class="et_pb_toggle et_pb_module et_pb_accordion_item et_pb_accordion_item_' . $index . ' ' . $accordion_class . '">';
+		$output .= '<div class="et_pb_toggle_header">';
+		$output .= '<div class="et_pb_toggle_title">' . $post_date . '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' . $post_title . '</div>';
 		$output .= '</div>';
+		$output .= '<div class="et_pb_toggle_content clearfix">' . $post_content . '</div>';
+		$output .= '</div>';
+
+		$offset++; // Increment the offset variable
 	}
 
 	wp_reset_postdata();
