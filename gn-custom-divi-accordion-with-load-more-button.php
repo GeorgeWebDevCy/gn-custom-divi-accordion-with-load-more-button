@@ -81,9 +81,6 @@ function generate_custom_accordion($atts)
 	// Enqueue Divi stylesheets explicitly
 	add_action('wp_enqueue_scripts', 'enqueue_divi_styles');
 
-	// Enqueue Divi stylesheets explicitly
-	add_action('wp_enqueue_scripts', 'enqueue_divi_styles');
-
 	function enqueue_divi_styles()
 	{
 		wp_enqueue_style('divi-parent-theme-style', get_template_directory_uri() . '/style.css');
