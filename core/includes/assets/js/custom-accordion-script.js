@@ -1,38 +1,29 @@
 jQuery(document).ready(function ($) {
-  // Handle the Load More button click
   $("#custom-accordion-load-more").on("click", function () {
-    var $button = $(this);
-    var offset = $(".et_pb_toggle").length;
-
-    // AJAX request
-    $.ajax({
-      url: customAccordion.ajaxurl,
-      type: "POST",
-      data: {
+    var button = $(this),
+      data = {
         action: "custom_accordion_load_more",
         security: customAccordion.nonce,
         post_type: customAccordion.post_type,
         taxonomy: customAccordion.taxonomy,
         term: customAccordion.term,
         count: customAccordion.count,
-        offset: offset,
-      },
-      beforeSend: function () {
-        $button.addClass("et_pb_loading");
-      },
-      success: function (response) {
-        var $accordion = $(".et_pb_accordion_0");
+        offset: $(".et_pb_toggle").length, // Pass the number of existing posts
+      };
 
-        if (response.success) {
-          $accordion.append(response.data);
-          $button.removeClass("et_pb_loading");
+    $.post(customAccordion.ajaxurl, data, function (response) {
+      if (response.success) {
+        var posts = $(response.data);
+
+        if (posts.length > 0) {
+          $(".et_pb_toggle:last").after(posts); // Append the loaded posts
         } else {
-          console.log(response.data);
+          button.hide(); // Hide the "Load More" button if no more posts
+          // You can add additional logic here to hide other elements
         }
-      },
-      error: function (xhr, status, error) {
-        console.log(error);
-      },
+      } else {
+        console.log("Error: " + response.data);
+      }
     });
   });
 });
