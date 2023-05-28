@@ -64,9 +64,6 @@ function GNCUSTOMDI()
 
 // Register the shortcode
 add_shortcode('divi_accordion_cpt_load_more', 'generate_custom_accordion');
-
-// Register the shortcode
-add_shortcode('divi_accordion_cpt_load_more', 'generate_custom_accordion');
 function generate_custom_accordion($atts)
 {
 	$index = 0; // Initialize the index variable
@@ -75,11 +72,24 @@ function generate_custom_accordion($atts)
 		array(
 			'post_type' => 'post',
 			'taxonomy' => 'category',
-			'term' => 'news',
+			'term' => 'νεα',
 			'count' => -1,
 		),
 		$atts
 	);
+
+	// Enqueue Divi stylesheets explicitly
+	add_action('wp_enqueue_scripts', 'enqueue_divi_styles');
+
+	// Enqueue Divi stylesheets explicitly
+	add_action('wp_enqueue_scripts', 'enqueue_divi_styles');
+
+	function enqueue_divi_styles()
+	{
+		wp_enqueue_style('divi-parent-theme-style', get_template_directory_uri() . '/style.css');
+		wp_enqueue_style('divi-child-theme-style', get_stylesheet_uri());
+
+	}
 
 	// Query arguments
 	$args = array(
@@ -125,24 +135,33 @@ function generate_custom_accordion($atts)
 
 	// Load more button if there are more posts
 	if ($query->found_posts > $atts['count']) {
-		$output .= '<div id="custom-accordion-load-more" class="et_pb_button">Load More</div>';
+		$output .= '<div id="custom-accordion-load-more" class="et_pb_button">Περισσότερα Νέα</div>';
 	}
 
-	return $output;
-}
+	// Enqueue the necessary scripts
+	wp_enqueue_script('custom-accordion-script', GNCUSTOMDI_PLUGIN_URL . 'core/includes/assets/js/custom-accordion-script.js', array('jquery'), '1.0', true);
 
-// Enqueue Divi stylesheets explicitly
-add_action('wp_enqueue_scripts', 'enqueue_divi_styles');
-function enqueue_divi_styles()
-{
-	wp_enqueue_style('divi-parent-theme-style', get_template_directory_uri() . '/style.css');
-	wp_enqueue_style('divi-child-theme-style', get_stylesheet_uri());
+	wp_localize_script(
+		'custom-accordion-script',
+		'customAccordion',
+		array(
+			'ajaxurl' => admin_url('admin-ajax.php'),
+			'nonce' => wp_create_nonce('custom-accordion-nonce'),
+			'post_type' => esc_attr($atts['post_type']),
+			'taxonomy' => esc_attr($atts['taxonomy']),
+			'term' => esc_attr($atts['term']),
+			'count' => esc_attr($atts['count']),
+		)
+	);
+
+	return $output;
 }
 
 // AJAX load more action
 add_action('wp_ajax_custom_accordion_load_more', 'custom_accordion_load_more');
 add_action('wp_ajax_nopriv_custom_accordion_load_more', 'custom_accordion_load_more');
-function custom_accordion_load_more()
+
+function custom_accordion_load_more($index)
 {
 	check_ajax_referer('custom-accordion-nonce', 'security');
 
@@ -171,9 +190,10 @@ function custom_accordion_load_more()
 
 	while ($query->have_posts()) {
 		$query->the_post();
-
+		// Get the post information
 		$post_date = get_the_date('j F Y, l');
 		$post_title = get_the_title();
+		$post_content = get_the_content();
 
 		$accordion_class = ($index === 0) ? 'et_pb_toggle_open' : 'et_pb_toggle_close';
 		$output .= '<div id="custom-accordion-' . $index . '" class="et_pb_toggle et_pb_module et_pb_accordion_item et_pb_accordion_item_' . $index . ' ' . $accordion_class . '">';
@@ -183,7 +203,7 @@ function custom_accordion_load_more()
 		$output .= '<div class="et_pb_toggle_content clearfix">' . $post_content . '</div>';
 		$output .= '</div>';
 
-		$offset++; // Increment the offset variable
+		$index++; // Increment the index variable
 	}
 
 	wp_reset_postdata();
