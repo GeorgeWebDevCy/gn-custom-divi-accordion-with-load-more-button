@@ -62,6 +62,18 @@ function GNCUSTOMDI()
 	return Gn_Custom_Divi_Accordion_With_Load_More_Button::instance();
 }
 
+// Enqueue Divi stylesheets explicitly
+add_action('wp_enqueue_scripts', 'enqueue_divi_styles');
+
+// Enqueue Divi stylesheets explicitly
+add_action('wp_enqueue_scripts', 'enqueue_divi_styles');
+
+function enqueue_divi_styles()
+{
+	wp_enqueue_style('divi-parent-theme-style', get_template_directory_uri() . '/style.css');
+	wp_enqueue_style('divi-child-theme-style', get_stylesheet_uri());
+
+}
 // Register the shortcode
 add_shortcode('divi_accordion_cpt_load_more', 'generate_custom_accordion');
 function generate_custom_accordion($atts)
@@ -78,18 +90,6 @@ function generate_custom_accordion($atts)
 		$atts
 	);
 
-	// Enqueue Divi stylesheets explicitly
-	add_action('wp_enqueue_scripts', 'enqueue_divi_styles');
-
-	// Enqueue Divi stylesheets explicitly
-	add_action('wp_enqueue_scripts', 'enqueue_divi_styles');
-
-	function enqueue_divi_styles()
-	{
-		wp_enqueue_style('divi-parent-theme-style', get_template_directory_uri() . '/style.css');
-		wp_enqueue_style('divi-child-theme-style', get_stylesheet_uri());
-
-	}
 
 	// Query arguments
 	$args = array(
@@ -108,8 +108,9 @@ function generate_custom_accordion($atts)
 	$query = new WP_Query($args);
 
 	// Loop through the queried posts
-	$output = '<div class="et_pb_module et_pb_accordion et_pb_accordion_0">';
-
+	$accordion_unique_id = uniqid();
+	//$output = '<div class="et_pb_module et_pb_accordion et_pb_accordion_0">';
+	$output = '<div class="et_pb_module et_pb_accordion et_pb_accordion_' . $accordion_unique_id . '">';
 	while ($query->have_posts()) {
 		$query->the_post();
 
@@ -135,7 +136,10 @@ function generate_custom_accordion($atts)
 
 	// Load more button if there are more posts
 	if ($query->found_posts > $atts['count']) {
-		$output .= '<div id="custom-accordion-load-more" class="et_pb_button">Περισσότερα Νέα</div>';
+		//$output .= '<div id="custom-accordion-load-more" class="et_pb_button">Περισσότερα Νέα</div>';
+		//$output .= '<div id="custom-accordion-load-more-' . $accordion_unique_id . '" class="et_pb_button">Περισσότερα Νέα</div>';
+		$output .= '<div id="custom-accordion-load-more-' . $accordion_unique_id . '" class="et_pb_button" data-accordion-id="' . $accordion_unique_id . '">Περισσότερα Νέα</div>';
+
 	}
 
 	// Enqueue the necessary scripts
@@ -151,6 +155,9 @@ function generate_custom_accordion($atts)
 			'taxonomy' => esc_attr($atts['taxonomy']),
 			'term' => esc_attr($atts['term']),
 			'count' => esc_attr($atts['count']),
+			'accordion_id' => $accordion_unique_id,
+			// Pass the unique ID to JavaScript
+
 		)
 	);
 
@@ -161,7 +168,7 @@ function generate_custom_accordion($atts)
 add_action('wp_ajax_custom_accordion_load_more', 'custom_accordion_load_more');
 add_action('wp_ajax_nopriv_custom_accordion_load_more', 'custom_accordion_load_more');
 
-function custom_accordion_load_more($index)
+function custom_accordion_load_more()
 {
 	check_ajax_referer('custom-accordion-nonce', 'security');
 
@@ -195,18 +202,19 @@ function custom_accordion_load_more($index)
 		$post_title = get_the_title();
 		$post_content = get_the_content();
 
-		$accordion_class = ($index === 0) ? 'et_pb_toggle_open' : 'et_pb_toggle_close';
-		$output .= '<div id="custom-accordion-' . $index . '" class="et_pb_toggle et_pb_module et_pb_accordion_item et_pb_accordion_item_' . $index . ' ' . $accordion_class . '">';
+		$accordion_class = ($offset === 0) ? 'et_pb_toggle_open' : 'et_pb_toggle_close';
+		$output .= '<div id="custom-accordion-' . $offset . '" class="et_pb_toggle et_pb_module et_pb_accordion_item et_pb_accordion_item_' . $offset . ' ' . $accordion_class . '">';
 		$output .= '<div class="et_pb_toggle_header">';
 		$output .= '<div class="et_pb_toggle_title">' . $post_date . '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' . $post_title . '</div>';
 		$output .= '</div>';
 		$output .= '<div class="et_pb_toggle_content clearfix">' . $post_content . '</div>';
 		$output .= '</div>';
 
-		$index++; // Increment the index variable
+		$offset++; // Increment the offset variable
 	}
 
 	wp_reset_postdata();
 
 	wp_send_json_success($output);
 }
+GNCUSTOMDI();

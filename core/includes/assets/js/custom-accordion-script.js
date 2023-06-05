@@ -1,10 +1,16 @@
 jQuery(document).ready(function ($) {
-  // Handle the Load More button click
-  $("#custom-accordion-load-more").on("click", function () {
+  $('[id^="custom-accordion-load-more-"]').on("click", function () {
     var $button = $(this);
-    var offset = $(".et_pb_toggle").length;
+    var accordion_id = $button.data("accordion-id");
+    var accordionContainer = $(
+      ".et_pb_module.et_pb_accordion.et_pb_accordion_" + accordion_id
+    );
+    var offset = accordionContainer.find(".et_pb_toggle").length;
 
-    // AJAX request
+    console.log("Load More button clicked");
+    console.log("Button ID:", $button.attr("id"));
+    console.log("Accordion Unique ID:", accordion_id);
+
     $.ajax({
       url: customAccordion.ajaxurl,
       type: "POST",
@@ -16,20 +22,33 @@ jQuery(document).ready(function ($) {
         term: customAccordion.term,
         count: customAccordion.count,
         offset: offset,
+        accordion_unique_id: "custom-accordion-load-more-" + accordion_id,
       },
       beforeSend: function () {
         $button.addClass("et_pb_loading");
       },
       success: function (response) {
-        var $accordion = $(".et_pb_accordion_0");
-
         if (response.success) {
-          $accordion.append(response.data);
+          console.log("URL:", customAccordion.ajaxurl);
+          console.log("Type:", "POST");
+          console.log("Data:");
+          console.log("  action:", "custom_accordion_load_more");
+          console.log("  security:", customAccordion.nonce);
+          console.log("  post_type:", customAccordion.post_type);
+          console.log("  taxonomy:", customAccordion.taxonomy);
+          console.log("  term:", customAccordion.term);
+          console.log("  count:", customAccordion.count);
+          console.log("  offset:", offset);
+          console.log("  accordion_id:", accordion_id);
+
+          console.log("item = " + accordion_id);
+          console.log("Response " + JSON.stringify(response));
+          console.log("Response Data " + JSON.stringify(response.data));
+          accordionContainer.append(response.data);
           $button.removeClass("et_pb_loading");
 
-          // Check if there are more posts to load
           if (response.data.trim() === "") {
-            $button.hide(); // Hide the Load More button
+            $button.hide();
           }
         } else {
           console.log(response.data);
